@@ -13,17 +13,19 @@
   "portsAttributes": {
     "8787": {
       "label": "Study Desk",
-      "onAutoForward": "openBrowser",
+      "onAutoForward": "openPreview",
       "protocol": "http"
     }
   },
-  "postCreateCommand": "python3 setup.py",
   "customizations": {
+    "codespaces": {
+      "openFiles": ["BOOTING.md"]
+    },
     "vscode": {
       "settings": {
         "chat.disableAIFeatures": true
       }
     }
   },
-  "postStartCommand": "bash -lc 'nohup python3 launch.py --no-browser > /tmp/study-desk-launcher.log 2>&1 < /dev/null &'"
+  "postAttachCommand": "python3 launch.py --no-browser"
 }

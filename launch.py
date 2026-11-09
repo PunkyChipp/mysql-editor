@@ -230,6 +230,16 @@ class Handler(BaseHTTPRequestHandler):
             conn=http.client.HTTPConnection('127.0.0.1',app_port(),timeout=60)
             conn.request(self.command,self.path,body=body,headers=headers)
             response=conn.getresponse(); data=response.read()
+            if (self.command=='GET' and urlparse(self.path).path=='/'
+                    and response.getheader('Content-Type','').startswith('text/html')):
+                # Use the editor's existing CSP nonce: no policy relaxation and
+                # no effect on normal browsers where storage already works.
+                csp=response.getheader('Content-Security-Policy','')
+                nonce=re.search(r"'nonce-([A-Za-z0-9+/_=-]+)'",csp)
+                if nonce:
+                    script=(ROOT/'editor/browser-storage.js').read_bytes()
+                    tag=b'<script nonce="'+nonce[1].encode()+b'">'+script+b'</script>'
+                    data=re.sub(b'(<head[^>]*>)',lambda m:m[0]+tag,data,count=1,flags=re.I)
             self.send_response(response.status)
             for key,value in response.getheaders():
                 if key.lower() not in {'connection','transfer-encoding','content-length','set-cookie'}: self.send_header(key,value)
@@ -255,11 +265,15 @@ def main():
                 if 'phase' not in existing: raise ValueError()
         except Exception:
             raise SystemExit('This port is already in use. Run with --port followed by another number.')
-        print('Study Desk is already open: '+address+'/__study/',flush=True)
+        print('Study Desk is already open: http://localhost:'+str(args.port)+'/__study/',flush=True)
+        if name: print('Private workspace: '+address+'/__study/',flush=True)
         if not args.no_browser and not name: webbrowser.open(address+'/__study/')
         return
     server.remote_host=remote_host
-    print('\nOpen Study Desk: '+address+'/__study/\nKeep this launcher running while you work.',flush=True)
+    # Emit localhost in the attached terminal so Codespaces detects the running
+    # service and opens its configured preview after the browser has connected.
+    print('\nOpen Study Desk: http://localhost:'+str(args.port)+'/__study/\nKeep this launcher running while you work.',flush=True)
+    if name: print('Private workspace: '+address+'/__study/',flush=True)
     if not args.no_auto_start: start_job()
     if not args.no_browser and not name: threading.Timer(.6,lambda:webbrowser.open(address+'/__study/')).start()
     try: server.serve_forever()
