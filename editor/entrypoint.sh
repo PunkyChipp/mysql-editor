@@ -17,6 +17,15 @@ settings['sqltools.connections'] = [{
     'previewLimit': 50
 }]
 base = Path('/home/coder/.local/share/code-server')
+previous = base / 'User' / 'settings.json'
+try:
+    preferences = json.loads(previous.read_text())
+except (OSError, ValueError):
+    preferences = {}
+for key in ('workbench.colorTheme', 'workbench.iconTheme', 'editor.fontSize',
+            'editor.fontFamily', 'editor.lineHeight', 'editor.minimap.enabled'):
+    if key in preferences:
+        settings[key] = preferences[key]
 (base / 'Machine').mkdir(exist_ok=True)
 for scope in ('User', 'Machine'):
     (base / scope / 'settings.json').write_text(json.dumps(settings, indent=2))

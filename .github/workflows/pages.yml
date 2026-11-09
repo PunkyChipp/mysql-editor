@@ -11,7 +11,25 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install frontend build dependencies
+        run: npm ci
+      - name: Check statement selection and rebuild the bundled editor
+        run: |
+          npm test
+          npm run build
+          git diff --exit-code -- desk/assets/app.js
+      - name: Check Python and shell sources
+        run: |
+          python3 -m compileall -q launch.py desk_api.py desk scripts tests
+          sh -n editor/entrypoint.sh
   deploy:
+    needs: check
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -13,6 +13,8 @@
   },
   "editor.parameterHints.enabled": true,
   "workbench.startupEditor": "none",
+  "workbench.colorTheme": "Default Dark Modern",
+  "editor.fontSize": 13,
   "extensions.ignoreRecommendations": true,
   "python.useEnvironmentsExtension": false,
   "python.experiments.enabled": false,

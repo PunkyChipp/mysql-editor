@@ -4,3 +4,4 @@ build-ca.pem
 backups
 *.zip
 __pycache__
+node_modules

@@ -3,16 +3,23 @@ import importlib.util
 from pathlib import Path
 import threading
 import unittest
+import sys
 
 from playwright.sync_api import sync_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 spec = importlib.util.spec_from_file_location('launcher', ROOT / 'launch.py')
 launcher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launcher)
 
 
 class TestHandler(launcher.Handler):
+    def handle_request(self):
+        if self.path=='/desk/':
+            self.send(200, '<h1>Study editor</h1>', 'text/html')
+        else:
+            super().handle_request()
     def proxy(self):
         self.send(200, '<h1>Study editor</h1>', 'text/html')
 
@@ -57,7 +64,7 @@ class BootTests(unittest.TestCase):
         self.assertIn('/__study/', self.page.url)
         launcher.update('ready', 5, 'Ready')
         expect(self.page.get_by_role('heading', name='Study editor')).to_be_visible()
-        self.assertEqual(self.page.url, self.base + '/?folder=/home/coder/coursework')
+        self.assertEqual(self.page.url, self.base + '/desk/')
 
     def test_setup_error_stays_visible_and_retry_resumes_automatic_handoff(self):
         launcher.update('error', 2, 'Download failed', error='Download failed')

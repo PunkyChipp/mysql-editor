@@ -19,6 +19,7 @@ import threading
 import time
 from urllib.parse import parse_qs, urlparse
 import webbrowser
+from desk_api import DeskError, SERVICE
 
 ROOT=Path(__file__).resolve().parent
 STATE={'phase':'idle','step':0,'message':'Ready to prepare your workspace.','details':[],'error':None}
@@ -161,10 +162,13 @@ class Handler(BaseHTTPRequestHandler):
     def valid_host(self):
         host=self.headers.get('Host','').split(':')[0].lower()
         return host in {'127.0.0.1','localhost',self.server.remote_host}
-    def send(self,status,body,ctype='application/json'):
+    def send(self,status,body,ctype='application/json',headers=None):
         data=body.encode() if isinstance(body,str) else body
         self.send_response(status); self.send_header('Content-Type',ctype); self.send_header('Content-Length',str(len(data)))
-        self.send_header('Cache-Control','no-store'); self.send_header('X-Content-Type-Options','nosniff'); self.end_headers(); self.wfile.write(data)
+        self.send_header('Cache-Control','no-store'); self.send_header('X-Content-Type-Options','nosniff')
+        for key,value in (headers or {}).items(): self.send_header(key,value)
+        self.end_headers()
+        if self.command!='HEAD': self.wfile.write(data)
     def do_GET(self): self.handle_request()
     def do_POST(self): self.handle_request()
     def do_PUT(self): self.handle_request()
@@ -173,6 +177,10 @@ class Handler(BaseHTTPRequestHandler):
     def handle_request(self):
         if not self.valid_host(): self.send(403,'{"error":"Unrecognized host"}'); return
         path=urlparse(self.path).path
+        if path=='/favicon.ico':
+            self.send(204,b'','image/x-icon'); return
+        if path.startswith('/__study/desk/'):
+            self.desk_request(path); return
         if path.startswith('/__study'):
             if path=='/__study/api/status' and self.command=='GET':
                 with LOCK: data={**STATE,'codespaces':bool(os.environ.get('CODESPACE_NAME'))}
@@ -190,12 +198,48 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404,'{}'); return
         if STATE['phase']!='ready':
             self.send_response(302); self.send_header('Location','/__study/'); self.send_header('Content-Length','0'); self.end_headers(); return
+        if path in {'/desk','/desk/'} or path.startswith('/desk/'):
+            asset=path.removeprefix('/desk/').removeprefix('/desk') or 'index.html'
+            allowed={'index.html':'text/html; charset=utf-8','style.css':'text/css; charset=utf-8',
+                     'assets/app.js':'text/javascript; charset=utf-8','THIRD_PARTY_NOTICES.txt':'text/plain; charset=utf-8'}
+            if asset not in allowed:
+                self.send(404,'Not found','text/plain'); return
+            data=(ROOT/'desk'/asset).read_bytes()
+            if asset=='index.html':
+                data=data.replace(b'/*__CONTEXT__*/',json.dumps({'token':TOKEN}).encode())
+                data=data.replace(b'__NONCE__',TOKEN.encode())
+            self.send(200,data,allowed[asset],{'Content-Security-Policy':
+                "default-src 'self'; script-src 'self' 'nonce-"+TOKEN+"'; style-src 'self' 'unsafe-inline'; "
+                "connect-src 'self'; img-src 'self' data:; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'"})
+            return
+        if path=='/' and not urlparse(self.path).query and self.command=='GET' and self.headers.get('Upgrade','').lower()!='websocket':
+            self.send_response(302); self.send_header('Location','/desk/'); self.send_header('Content-Length','0'); self.end_headers(); return
         try: self.proxy()
         except (BrokenPipeError,ConnectionResetError): pass
         except Exception as e:
             with LOCK: STATE['details'].append(redact(str(e)))
-            update('error',4,'The workspace disconnected. Choose Try again to resume it.')
-            self.send(502,'The workspace is reconnecting. <a href="/__study/">Return to setup</a>.','text/html; charset=utf-8')
+            self.send(502,'The full code editor is reconnecting. <a href="/desk/">Return to the SQL workspace</a> or refresh this page.','text/html; charset=utf-8')
+    def desk_request(self,path):
+        if STATE['phase']!='ready': self.send(503,json.dumps({'error':'The workspace is still starting.'})); return
+        origin=self.headers.get('Origin','')
+        if self.command!='POST' or self.headers.get('X-Study-Token')!=TOKEN or (origin and urlparse(origin).netloc!=self.headers['Host']):
+            self.send(403,json.dumps({'error':'Refresh Study Desk and try again.'})); return
+        try:
+            length=int(self.headers.get('Content-Length','0'))
+            if length<1 or length>1200000: raise DeskError('Requests can contain up to 1 MB of code.',413)
+            data=json.loads(self.read_body(length))
+            if not isinstance(data,dict): raise DeskError('Send a workspace operation.')
+            action=path.rsplit('/',1)[-1]
+            if action=='run': result=SERVICE.start(data)
+            elif action=='job': result=SERVICE.status(data.get('id'))
+            elif action=='stop': result=SERVICE.cancel(data.get('id'))
+            elif action=='call' and data.get('op') in {'bootstrap','schema','table','update','files','read','save','state'}:
+                result=SERVICE.call(data)
+            else: raise DeskError('Unknown workspace operation.',404)
+            self.send(200,json.dumps(result,default=str))
+        except DeskError as exc: self.send(exc.status,json.dumps({'error':str(exc)}))
+        except (ValueError,TypeError,KeyError): self.send(400,json.dumps({'error':'The workspace request was incomplete.'}))
+        except Exception: self.send(503,json.dumps({'error':'The runtime could not finish that operation. Try again.'}))
     def proxy(self):
         host=self.headers['Host']; cookie=auth_cookie(host)
         headers={k:v for k,v in self.headers.items() if k.lower() not in {'connection','transfer-encoding','content-length','cookie','accept-encoding'}}

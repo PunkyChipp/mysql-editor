@@ -9,6 +9,13 @@ use a normal browser; no local installs, uploads, or setup commands are needed.
 The editor, real MySQL server, and Python run in that GitHub-hosted computer.
 Pages serves the front page. No ChatGPT-hosted website is needed.
 
+The default editor is now the SQL-first workspace: visible run controls, query
+tabs, database/schema browsing, editable data grids, query history, CSV export,
+SQL formatting, EXPLAIN plans, Python integration and 20 bundled looks with five
+layout styles. Standard VS Code Dark opens by default. Code editor opens the
+full VS Code-style environment for debugging and terminals. See
+[the workspace guide](desk/README.md) for controls and execution rules.
+
 ## Publication
 
 Enable repository Pages with Source: GitHub Actions. The included workflow builds

@@ -5,3 +5,4 @@ __pycache__/
 backups/
 dist/
 .launcher-session*
+node_modules/
