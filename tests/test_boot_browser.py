@@ -1,6 +1,7 @@
 """Boot handoff checks. Run with Python + Playwright and installed Chromium."""
 import importlib.util
 from pathlib import Path
+from unittest.mock import patch
 import threading
 import unittest
 import sys
@@ -80,11 +81,65 @@ class BootTests(unittest.TestCase):
             # Restore the module's real implementation for later tests.
             launcher.start_job = original_start_job
 
-    def test_ready_session_also_opens_inside_preview_frame(self):
+    def test_embedded_preview_offers_own_browser_tab_instead_of_loading_editor(self):
         launcher.update('ready', 5, 'Ready')
         self.page.set_content('<iframe title="Workspace"></iframe>')
         self.page.locator('iframe').evaluate('(frame, url) => frame.src = url', self.base)
-        expect(self.page.frame_locator('iframe').get_by_role('heading', name='Study editor')).to_be_visible()
+        frame=self.page.frame_locator('iframe')
+        expect(frame.get_by_role('heading', name='Your workspace belongs in a full browser tab.')).to_be_visible()
+        link=frame.get_by_role('link', name='Open Study Desk', exact=False).first
+        expect(link).to_have_attribute('href',self.base+'/desk/')
+        with self.page.expect_popup() as opened:
+            link.click()
+        standalone=opened.value
+        expect(standalone.get_by_role('heading',name='Study editor')).to_be_visible()
+        self.assertTrue(standalone.evaluate('window.self===window.top'))
+        standalone.close()
+
+    def test_frame_guard_works_even_if_fetch_destination_header_is_missing(self):
+        launcher.update('working', 2, 'Installing tools')
+        def omit_destination(route):
+            headers={k:v for k,v in route.request.headers.items() if k.lower()!='sec-fetch-dest'}
+            route.continue_(headers=headers)
+        self.page.route('**/__study/',omit_destination)
+        self.page.set_content('<iframe title="Workspace"></iframe>')
+        self.page.locator('iframe').evaluate('(frame, url) => frame.src = url',self.base+'/__study/')
+        expect(self.page.frame_locator('iframe').locator('#standalone-link')).to_be_visible()
+
+    def test_sql_workspace_client_also_leaves_the_frame_without_making_database_requests(self):
+        launcher.update('ready',5,'Ready')
+        requests=[]
+        self.page.on('request',lambda r: requests.append(r.url) if '/__study/desk/' in r.url else None)
+        def omit_destination(route):
+            route.continue_(headers={k:v for k,v in route.request.headers.items() if k.lower()!='sec-fetch-dest'})
+        self.page.route('**/desk/index.html',omit_destination)
+        self.page.set_content('<iframe title="Workspace"></iframe>')
+        self.page.locator('iframe').evaluate('(frame,url)=>frame.src=url',self.base+'/desk/index.html')
+        expect(self.page.frame_locator('iframe').locator('#standalone-link')).to_be_visible()
+        self.assertEqual(requests,[])
+
+    def test_actual_standalone_workspace_uses_the_full_browser_viewport(self):
+        launcher.update('ready',5,'Ready')
+        def fake_call(request):
+            if request['op']=='bootstrap':
+                return {'database':'schoolwork','version':'8.4.0','tables':[],'files':[]}
+            return {'value':None,'saved':True}
+        with patch.object(launcher.SERVICE,'call',side_effect=fake_call):
+            self.page.goto(self.base+'/desk/index.html')
+            expect(self.page.locator('#connection-dot')).to_have_class('live-dot online')
+            self.assertTrue(self.page.evaluate('window.self===window.top'))
+            box=self.page.locator('#app').bounding_box()
+            self.assertEqual(box['width'],834)
+            self.assertEqual(box['height'],1194)
+            self.page.close()
+
+    def test_standalone_address_uses_codespace_forwarding_domain(self):
+        self.server.remote_host='example-codespace-8787.app.github.dev'
+        try:
+            self.page.goto(self.base+'/__study/browser')
+            expect(self.page.locator('#standalone-link')).to_have_attribute('href','https://example-codespace-8787.app.github.dev/desk/')
+        finally:
+            self.server.remote_host=''
 
     def test_diagnostic_view_can_remain_open_when_ready(self):
         launcher.update('ready', 5, 'Ready')

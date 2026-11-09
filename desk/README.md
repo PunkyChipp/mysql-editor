@@ -4,6 +4,11 @@ Study Desk opens `/desk/` after boot checks pass. It uses real MySQL, not SQLite
 or an emulation. The full code-server editor remains at
 `/?folder=/home/coder/coursework` for Python debugging and terminals.
 
+The workspace runs in its own full browser tab. Codespaces hosts the backend;
+its IDE is only an administration interface. Preview frames show an Open Study
+Desk link rather than trying to run the app inside the frame. The detached
+launcher continues when the IDE tab is closed, while the Codespace remains on.
+
 ## Everyday use
 
 - **Run query / Ctrl or Command Enter** runs selected text, or the statement at

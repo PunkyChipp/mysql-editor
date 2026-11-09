@@ -28,6 +28,7 @@ jobs:
         run: |
           python3 -m compileall -q launch.py desk_api.py desk scripts tests
           sh -n editor/entrypoint.sh
+          python3 tests/test_codespace_boot.py -v
   deploy:
     needs: check
     runs-on: ubuntu-latest

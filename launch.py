@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import http.client
 import hashlib
+from html import escape
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -177,6 +178,10 @@ class Handler(BaseHTTPRequestHandler):
     def handle_request(self):
         if not self.valid_host(): self.send(403,'{"error":"Unrecognized host"}'); return
         path=urlparse(self.path).path
+        if self.command in {'GET','HEAD'} and (path=='/__study/browser' or (
+                path in {'/','/desk','/desk/','/desk/index.html','/__study','/__study/'}
+                and self.headers.get('Sec-Fetch-Dest') in {'iframe','frame'})):
+            self.browser_handoff(); return
         if path=='/favicon.ico':
             self.send(204,b'','image/x-icon'); return
         if path.startswith('/__study/desk/'):
@@ -219,6 +224,10 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             with LOCK: STATE['details'].append(redact(str(e)))
             self.send(502,'The full code editor is reconnecting. <a href="/desk/">Return to the SQL workspace</a> or refresh this page.','text/html; charset=utf-8')
+    def browser_handoff(self):
+        origin='https://'+self.server.remote_host if self.server.remote_host else 'http://127.0.0.1:'+str(self.server.server_port)
+        html=(ROOT/'launcher/browser.html').read_text().replace('__ADDRESS__',escape(origin+'/desk/',quote=True))
+        self.send(200,html,'text/html; charset=utf-8',{'Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"})
     def desk_request(self,path):
         if STATE['phase']!='ready': self.send(503,json.dumps({'error':'The workspace is still starting.'})); return
         origin=self.headers.get('Origin','')

@@ -6,3 +6,5 @@ backups/
 dist/
 .launcher-session*
 node_modules/
+.study-desk-start.md
+.study-desk-launcher.log

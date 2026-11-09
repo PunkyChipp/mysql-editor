@@ -1,16 +1,17 @@
-# Study Desk is starting
+# Study Desk runs in your browser
 
-You are connected to the computer that hosts your workspace. Study Desk's setup
-screen opens automatically in the preview panel. Leave this page open while it
-installs the tools, starts MySQL and Python, and runs the checks. The setup screen
-then switches to your study editor automatically.
+Codespaces hosts the private backend. Your SQL and Python workspace opens in a
+full browser tab, outside the IDE preview. The app shows progress and opens the
+editor automatically when its checks pass.
 
-The first boot can take several minutes. Future starts reuse the installed tools
-and saved coursework. GitHub may ask you to sign in or approve access.
+The generated **.study-desk-start.md** note contains your actual **Open Study
+Desk** link. Follow it once if your browser blocks the automatic tab. Keep port
+8787 **Private**. Bookmark the app’s own address for next time.
 
-If the preview is closed, open **Ports → Study Desk (8787) → Open in Browser**.
-Keep the port **Private**. That address can also be bookmarked for next time.
+For a workspace already showing a small preview, use its **Open in Browser**
+control, or **Ports → Study Desk (8787) → Open in Browser**. You can use the same
+existing workspace; no coursework needs to be moved.
 
-The surrounding Codespaces editor manages the host. Your coursework belongs in
-the Study Desk editor shown in the preview. Stop the Codespace when you finish
-to conserve your allowance; export your work before deleting or rebuilding it.
+The backend starts independently of the IDE tab. Closing that tab does not stop
+its detached launcher. Stopping the Codespace does stop the app. Resume the host
+in GitHub before returning; GitHub inactivity and usage limits still apply.

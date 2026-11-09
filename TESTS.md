@@ -24,18 +24,22 @@ Automatic boot handoff checks (`python3 tests/test_boot_browser.py -v`):
 - Preparing and checking states stay on the progress screen.
 - Readiness automatically replaces setup with the editor, without a button click.
 - Setup errors stay visible and retry resumes the automatic handoff.
-- Readiness navigation also works inside an embedded preview frame.
+- A preview shows an Open Study Desk link; following it opens a top-level tab.
+- Both setup and SQL client guards leave frames before making database requests.
+- The actual standalone workspace uses the full tablet browser viewport.
+- Standalone links use the Codespace's private forwarding domain.
 - The optional `?stay=1` diagnostic view remains open after readiness.
 - Blocked local/session storage receives an in-memory preference store; available
   browser storage and its saved preferences are left intact.
 
-The devcontainer now starts the launcher in the foreground after browser attach,
-prints a localhost URL for port detection, and uses the documented `openPreview`
-port action rather than opening a new tab before the client connects.
+The devcontainer starts a detached background launcher on host startup, waits for
+its HTTP listener, then returns. Browser attach emits the localhost URL and the
+documented `openBrowser` port action opens the app outside the IDE. A generated
+start note contains the actual private address if the browser blocks the tab.
+Three lifecycle tests cover detached startup, reattach reuse, the note and config.
 
-The actual code-server handoff was also checked at desktop size and inside a
-cross-site tablet preview with third-party storage blocked. Its own CSP nonce
-allows the small storage fallback without relaxing the editor's CSP.
+Earlier code-server checks covered desktop and cross-site storage fallback.
+The current launch flow opens the standalone app instead of embedding it.
 An earlier full code-server/MySQL trial exceeded this executor's local disk.
 For the new SQL workspace, a disposable real MySQL 8.4 server and a lightweight
 restricted Python container ran the actual Docker-exec worker/API. This avoids
@@ -61,7 +65,7 @@ container configuration; use a fresh Codespace to test this revised boot flow.
 - Additional real-browser checks cover actual schema completion, SQL formatting,
   EXPLAIN plans, the table designer's generated SQL, safe HTML/text rendering,
   result inspection, readable MySQL errors, and desktop/tablet/phone layouts.
-- The six automatic-boot checks still pass with `/desk/` as the ready target.
+- Ten automatic-boot/browser checks pass with `/desk/` as the standalone target.
 - Python/shell/browser syntax and whitespace checks pass. CI now checks the SQL
   tests and rebuilds the committed bundle before deploying the public start page.
 

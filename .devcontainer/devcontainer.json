@@ -13,13 +13,13 @@
   "portsAttributes": {
     "8787": {
       "label": "Study Desk",
-      "onAutoForward": "openPreview",
+      "onAutoForward": "openBrowser",
       "protocol": "http"
     }
   },
   "customizations": {
     "codespaces": {
-      "openFiles": ["BOOTING.md"]
+      "openFiles": [".study-desk-start.md"]
     },
     "vscode": {
       "settings": {
@@ -27,5 +27,7 @@
       }
     }
   },
-  "postAttachCommand": "python3 launch.py --no-browser"
+  "postStartCommand": "python3 scripts/codespace_boot.py start",
+  "waitFor": "postStartCommand",
+  "postAttachCommand": "python3 scripts/codespace_boot.py attach"
 }

@@ -2,8 +2,8 @@
 
 The public start page lives on GitHub Pages. Create my workspace opens this
 repository in the student's own Codespace. The devcontainer installs the host
-prerequisites and, after the browser connects, starts the guided launcher and
-opens private port 8787 in Codespaces' embedded preview. Students
+prerequisites and starts the web app in a detached background process.
+After browser attachment, private port 8787 opens in a full browser tab. Students
 use a normal browser; no local installs, uploads, or setup commands are needed.
 
 The editor, real MySQL server, and Python run in that GitHub-hosted computer.
@@ -27,8 +27,9 @@ access; the workflow does not ask for a personal access token.
 ## Student flow
 
 1. Open the Pages URL, choose Create my workspace, sign into GitHub, and approve creation.
-2. Leave the Codespace open. A Study Desk preview opens automatically, shows
-   setup progress, and switches to the study editor when all checks pass.
+2. Study Desk opens in a full browser tab, shows setup progress, and switches
+   to its own editor when all checks pass. The backend does not depend on the
+   IDE terminal staying attached.
 3. Keep port 8787 PRIVATE. GitHub may require sign-in or an access approval;
    the application cannot accept those account prompts for you.
 4. Bookmark the workspace or save its address on the start page.
@@ -44,11 +45,14 @@ before deleting it or rebuilding its host container. Source commits do not
 include inner coursework/database contents automatically. Each student has a
 separate environment; this is not a shared multi-user server.
 
-If the preview is closed, reopen it with Ports > 8787 > Open in Browser.
+If your browser blocks the automatic tab, follow Open Study Desk in the generated
+`.study-desk-start.md` note once. The Ports > 8787 > Open in Browser control also
+opens the same independent web app. An embedded request receives an Open Study
+Desk link instead of trying to load the workspace inside the frame.
 The setup page accepts `?stay=1` to keep its diagnostic view open after readiness.
-If browser privacy settings deny storage to the embedded editor, its temporary
-interface preferences use memory. Saved coursework and MySQL data still use
-the host's Docker volumes.
+Saved coursework and MySQL data use the host's Docker volumes. The app has its
+own browser URL and interface; Codespaces provides its computer. Keep that
+Codespace running. Its normal inactivity and usage limits still apply.
 
 The coding runtime has no external network and a read-only extension installation.
 No AI extensions are installed. Ordinary completion, diagnostics, debugging,

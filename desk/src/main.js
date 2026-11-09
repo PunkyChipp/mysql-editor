@@ -411,4 +411,4 @@ async function boot(){
     renderSidebar();$('draft-status').textContent='Drafts saved to workspace';setTask('Ready');
   }catch(error){booting=false;newTab();setTask('Connection needs attention',true);toast(error.message);}
 }
-boot();
+if(window.self===window.top)boot();else location.replace('/__study/browser');
