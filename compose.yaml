@@ -1,0 +1,111 @@
+name: locked-study
+services:
+  editor:
+    build:
+      context: .
+      dockerfile: editor/Dockerfile
+      secrets:
+        - build_ca
+    image: locked-study-editor:local
+    network_mode: none
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      PASSWORD: ${EDITOR_PASSWORD:?Run python setup.py first}
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_DATABASE: schoolwork
+      MYSQL_USER: student
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Run python setup.py first}
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+    volumes:
+      - ./editor/settings.json:/opt/study/settings.json:ro
+      - ./editor/entrypoint.sh:/opt/study/entrypoint.sh:ro
+      - coursework:/home/coder/coursework
+      - profile:/home/coder/.local/share/code-server
+      - editor-socket:/run/editor
+    tmpfs:
+      - /tmp:uid=1000,gid=1000,mode=1777
+      - /home/coder/.cache:uid=1000,gid=1000
+      - /home/coder/.config:uid=1000,gid=1000
+      - /home/coder/.vscode-oss-shared:uid=1000,gid=1000
+      - /home/coder/.local/share/vscode-sqltools:uid=1000,gid=1000
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(socket.AF_UNIX); s.settimeout(2); s.connect('/run/editor/editor.sock'); s.close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    pids_limit: 512
+    restart: unless-stopped
+  db:
+    image: mysql:8.4
+    network_mode: "service:editor"
+    depends_on: [editor]
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      MYSQL_DATABASE: schoolwork
+      MYSQL_USER: student
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Run python setup.py first}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Run python setup.py first}
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+    command: ["--bind-address=127.0.0.1", "--mysqlx=OFF", "--local-infile=OFF"]
+    volumes:
+      - database:/var/lib/mysql
+    tmpfs:
+      - /tmp
+      - /var/run/mysqld
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=TCP -h127.0.0.1 -ustudent schoolwork -e 'SELECT 1' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+    restart: unless-stopped
+  gateway:
+    image: nginx:1.28-alpine
+    user: "101:101"
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    depends_on: [editor]
+    environment:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      ALL_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      all_proxy: ""
+    ports:
+      - "127.0.0.1:${STUDY_PORT:-8080}:8080"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - editor-socket:/run/editor:ro
+    tmpfs:
+      - /tmp:uid=101,gid=101
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/login"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+volumes:
+  coursework:
+  profile:
+  database:
+  editor-socket:
+secrets:
+  build_ca:
+    file: ${BUILD_CA_FILE:-./build-ca.pem}

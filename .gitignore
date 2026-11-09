@@ -1,0 +1,7 @@
+.env
+build-ca.pem
+__pycache__/
+*.zip
+backups/
+dist/
+.launcher-session*

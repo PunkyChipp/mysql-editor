@@ -1,0 +1,6 @@
+.env
+.git
+build-ca.pem
+backups
+*.zip
+__pycache__

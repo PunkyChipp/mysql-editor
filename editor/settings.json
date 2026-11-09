@@ -1,0 +1,22 @@
+{
+  "chat.disableAIFeatures": true,
+  "telemetry.telemetryLevel": "off",
+  "extensions.autoUpdate": false,
+  "extensions.autoCheckUpdates": false,
+  "update.mode": "none",
+  "python.defaultInterpreterPath": "/opt/python/bin/python",
+  "python.languageServer": "None",
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": "off",
+    "strings": "off"
+  },
+  "editor.parameterHints.enabled": true,
+  "workbench.startupEditor": "none",
+  "extensions.ignoreRecommendations": true,
+  "python.useEnvironmentsExtension": false,
+  "python.experiments.enabled": false,
+  "basedpyright.analysis.typeCheckingMode": "basic",
+  "workbench.secondarySideBar.defaultVisibility": "hidden",
+  "editor.wordWrap": "on"
+}

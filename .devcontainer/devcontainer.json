@@ -1,0 +1,29 @@
+{
+  "name": "Study Desk \u2014 private browser workspace",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
+  },
+  "forwardPorts": [
+    8787
+  ],
+  "portsAttributes": {
+    "8787": {
+      "label": "Study Desk",
+      "onAutoForward": "openBrowser",
+      "protocol": "http"
+    }
+  },
+  "postCreateCommand": "python3 setup.py",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "chat.disableAIFeatures": true
+      }
+    }
+  },
+  "postStartCommand": "bash -lc 'nohup python3 launch.py --no-browser > /tmp/study-desk-launcher.log 2>&1 < /dev/null &'"
+}
