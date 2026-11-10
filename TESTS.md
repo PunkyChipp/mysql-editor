@@ -3,10 +3,11 @@
 Passed locally:
 
 - Static build uses the supplied OWNER/REPOSITORY identity and rejects malformed values.
-- Only index.html and .nojekyll are emitted into the Pages artifact.
+- The real editor, relative assets, public configuration, owner guide and reviewed
+  Windows home package are emitted into the Pages artifact; private state is excluded.
 - Desktop and tablet Chromium layouts render without horizontal page overflow.
-- Create my workspace points to codespaces.new for the actual build identity.
-- No ChatGPT-hosted URLs or local-download links are present on the public front page.
+- The public editor uses /mysql-editor/api/ on its own origin and no Codespaces launch link.
+- No ChatGPT-hosted URLs are used. The owner guide offers the reviewed home package.
 - Private workspace addresses save, survive reload, and can be forgotten.
 - Invalid/non-HTTPS addresses are rejected.
 - Python/JSON sources, inline JavaScript, and workflow syntax validate.
@@ -74,3 +75,32 @@ Run the real integration tests only against a disposable test runtime:
 The browser pilot is `python3 tests/test_desk_browser.py` with the test launcher
 running on localhost:8787 (or set `DESK_BROWSER_URL`). It creates sample tables
 and files and edits the sample rows.
+
+## Same-domain home deployment (current public architecture)
+
+- Ten origin API tests cover the Worker secret, password hashing, scoped Secure/
+  HttpOnly cookies, CSRF and Origin enforcement, unknown routes/operations,
+  session expiry/logout, login throttling, runtime readiness and current Docker health.
+- Five Worker tests cover the narrow path/method allowlist, cross-origin rejection,
+  secret injection/header sanitization, bounded request bodies, offline handling
+  and no CORS exposure. Public HTTP is rejected before reaching the home origin.
+- Five deployment/package tests cover inactive zones and route conflicts without
+  mutations, preservation of existing website DNS addresses, relative static
+  editor assets, secret-free packaging and failed connector checksum rejection. A failed local boot retries through its existing token-checked setup endpoint.
+- Three local-wizard tests verify account hashing, no credential disclosure in
+  status, local token/review requirements and actual setup-page delivery.
+- A browser pilot exercised the actual Worker module as a same-origin edge adapter,
+  the authenticated origin and a disposable real MySQL 8.4 runtime. It passed
+  login rejection/success, real SQL scripts/results, Python/MySQL execution,
+  saved files/theme/session restoration, logout and the public connection check.
+  All browser requests stayed under /mysql-editor/ on the same test origin.
+
+This pilot used a disposable lightweight restricted Python container with the
+same worker dependencies, plus real MySQL, to fit this executor's disk limit.
+It does not establish that a Windows host or live Cloudflare/registrar account
+has been configured. Windows first-run, live DNS/tunnel activation, actual iPad
+Safari and school Wi-Fi remain owner-side checks. No actual Cloudflare account
+mutations were performed by the tests; provisioner transports were mocked.
+
+Owner launch commands, the setup window and public guide are built. The GitHub
+connector cannot log into the owner's Windows PC, Cloudflare or registrar.

@@ -8,7 +8,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parent
-WORKER = (ROOT / 'desk/worker.py').read_text()
+WORKER = (ROOT / 'desk/worker.py').read_text(encoding='utf-8')
 
 
 class DeskError(Exception):

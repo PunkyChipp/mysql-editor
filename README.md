@@ -1,74 +1,91 @@
-# Study Desk — GitHub Pages + a private browser workspace
+# Study Desk — SQL and Python at one website address
 
-The public start page lives on GitHub Pages. Create my workspace opens this
-repository in the student's own Codespace. The devcontainer installs the host
-prerequisites and starts the web app in a detached background process.
-After browser attachment, private port 8787 opens in a full browser tab. Students
-use a normal browser; no local installs, uploads, or setup commands are needed.
+**https://highereconomicsrevision.co.uk/mysql-editor/** serves the actual editor.
+It stays at that address. GitHub Pages hosts the interface; an authenticated,
+same-origin API gateway connects to real MySQL and Python on the owner's Windows
+PC over an outbound Cloudflare Tunnel. School devices need only a browser.
 
-The editor, real MySQL server, and Python run in that GitHub-hosted computer.
-Pages serves the front page. No ChatGPT-hosted website is needed.
+Until the home PC and route are activated, the page explicitly reports that its
+backend is not connected. It does not simulate a working MySQL connection.
 
-The default editor is now the SQL-first workspace: visible run controls, query
-tabs, database/schema browsing, editable data grids, query history, CSV export,
-SQL formatting, EXPLAIN plans, Python integration and 20 bundled looks with five
-layout styles. Standard VS Code Dark opens by default. Code editor opens the
-full VS Code-style environment for debugging and terminals. See
-[the workspace guide](desk/README.md) for controls and execution rules.
+## Windows owner setup
 
-## Publication
+The [published owner guide](https://highereconomicsrevision.co.uk/mysql-editor/setup/)
+includes the package download and account/DNS instructions.
 
-Enable repository Pages with Source: GitHub Actions. The included workflow builds
-the page using the actual repository name and publishes only dist/. Runtime
-source, credentials, and coursework are not published as Pages assets. Every push
-to main updates the front page. Initial Pages enablement needs repository admin
-access; the workflow does not ask for a personal access token.
+1. Install Python 3.12+ and Docker Desktop; complete Docker's first-run/WSL setup.
+2. Extract the package into a permanent folder in your own Documents folder.
+   Open **START STUDY DESK.cmd** to open the local setup window.
+3. Create your workspace username and a unique password of at least 12 characters.
+   The launcher prepares the coding runtime, MySQL and persistent coursework.
+4. Activate the existing domain on Cloudflare's free plan. Import and verify all
+   existing DNS records before changing nameservers at the registrar. Preserve
+   GitHub Pages records, email records and working HTTPS. This owner-account step
+   cannot be performed by a static website or the GitHub connector.
+5. Enter a scoped Cloudflare API token only in the local setup window. Review the
+   changes and choose Connect website. It creates the tunnel, installs the official
+   checksum-verified connector, uploads the API Worker and adds the narrow route.
+   The Cloudflare API token is discarded after setup.
+6. Wait for the public connection test to succeed, then sign into the editor.
+   Test the same link and SELECT 1 from school Wi-Fi before depending on it.
 
-## Student flow
+Optional startup at Windows sign-in and keep-awake are configured locally.
+Keep-awake does not change the permanent power plan or keep the display on.
+The PC and Docker must remain running. Disconnect website stops remote access
+without deleting coursework; local Docker containers may remain running.
 
-1. Open the Pages URL, choose Create my workspace, sign into GitHub, and approve creation.
-2. Study Desk opens in a full browser tab, shows setup progress, and switches
-   to its own editor when all checks pass. The backend does not depend on the
-   IDE terminal staying attached.
-3. Keep port 8787 PRIVATE. GitHub may require sign-in or an access approval;
-   the application cannot accept those account prompts for you.
-4. Bookmark the workspace or save its address on the start page.
-5. Resume existing workspaces in GitHub. Stop them when finished to conserve allowance.
+## Routing and the existing website
 
-First launch takes several minutes. GitHub account, compute, storage, and usage
-restrictions apply. Creating another Codespace creates another environment.
+| Component | Location |
+| --- | --- |
+| Complete editor, 20 looks, five layouts | GitHub Pages /mysql-editor/ |
+| Browser login and database requests | Same website origin /mysql-editor/api/* |
+| API proxy and outbound tunnel | Owner's Cloudflare account / Windows PC |
+| Real MySQL, Python and coursework | Restricted Docker runtime on Windows PC |
 
-## Persistence and isolation
+Only the API path is routed through the Worker. The economics site files stay
+on GitHub Pages. The installer adds one origin CNAME and enables Cloudflare
+proxying on existing website records without changing their addresses. It does
+not reset DNS, change registrar nameservers, edit email records or overwrite an
+unrelated Worker. Domain activation must preserve all existing DNS records.
 
-Saved files and MySQL data use Docker volumes. Export backups outside Codespaces
-before deleting it or rebuilding its host container. Source commits do not
-include inner coursework/database contents automatically. Each student has a
-separate environment; this is not a shared multi-user server.
+## Editor and authentication
 
-If your browser blocks the automatic tab, follow Open Study Desk in the generated
-`.study-desk-start.md` note once. The Ports > 8787 > Open in Browser control also
-opens the same independent web app. An embedded request receives an Open Study
-Desk link instead of trying to load the workspace inside the frame.
-The setup page accepts `?stay=1` to keep its diagnostic view open after readiness.
-Saved coursework and MySQL data use the host's Docker volumes. The app has its
-own browser URL and interface; Codespaces provides its computer. Keep that
-Codespace running. Its normal inactivity and usage limits still apply.
+SQL is the main workspace: query tabs, schema completion, statement/selection/
+script execution, multiple results, formatting, EXPLAIN plans, table search and
+paging, optimistic cell edits, a SQL-generating table designer, CSV and history.
+Python connects to the same database. VS Code Dark is the default. See the
+[workspace guide](desk/README.md) for execution and persistence rules.
 
-The coding runtime has no external network and a read-only extension installation.
-No AI extensions are installed. Ordinary completion, diagnostics, debugging,
-SQLTools, and Python's MySQL connector are included. The outer Codespace remains
-the owner's administration interface.
+The public app includes SQL and noninteractive Python. The full code-server
+terminal/debugger is a local owner tool; its automatic sign-in proxy is never
+exposed by the remote API. Additional runtimes require administrator setup.
 
-The launcher automatically signs into the inner editor, relying on localhost or
-PRIVATE Codespaces forwarding. Do not expose the launcher as a public service.
-The public Pages site contains no runtime passwords.
+Passwords use PBKDF2-SHA256 with random salts and 600,000 iterations. Eight-hour
+revocable sessions use Secure, HttpOnly, SameSite=Strict cookies scoped to the
+API path. Origin/CSRF checks, login throttling, bounded requests and an independent
+Worker-to-origin secret protect the service. Browser requests stay same-origin.
+
+SQL/Python executes only inside the existing restricted Docker runtime through
+fixed commands and JSON stdin. No external network, writable system/extensions,
+Docker socket or Linux capabilities are provided to that coding container.
+Connector credentials and origin secrets are stored in the Windows user's
+LocalAppData/StudyDesk folder. Private state, .env files and logs are excluded
+from public artifacts and downloads. Export backups before deleting volumes.
+
+This provisions one personal workspace, not isolated classroom accounts/runtimes.
+Do not share one account as a substitute for multi-user isolation. School filtering
+and actual iPad Safari still require a pilot. Provider free-plan limits apply;
+setup does not select a paid plan.
 
 ## Development
 
-    python3 scripts/build_pages.py --repository OWNER/REPOSITORY
-    python3 -m http.server 8808 --bind 127.0.0.1 --directory dist
+Run npm ci and npm run build to rebuild the committed browser bundle. npm test
+checks SQL scope selection and the Worker. Python tests cover authentication,
+sessions, CSRF, owner setup, DNS preservation, checksums, packaging and startup.
+Real database/browser pilots are documented in TESTS.md.
 
-The static build uses Python's standard library. On a Docker host, python3
-launch.py opens the guided setup. The boot handoff has browser checks in
-`tests/test_boot_browser.py` (requires Playwright and Chromium). Actual GitHub
-provisioning and iPad Safari still need a one-account pilot before classroom use.
+python3 scripts/build_pages.py --repository PunkyChipp/mysql-editor creates the
+public editor, guide and reviewed Windows package in dist/. CI checks the sources
+before Pages publication. The older local/Codespaces launcher remains available
+for development; it is not the published website's execution backend.

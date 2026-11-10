@@ -8,3 +8,4 @@ dist/
 node_modules/
 .study-desk-start.md
 .study-desk-launcher.log
+.home/

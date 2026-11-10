@@ -5,7 +5,7 @@
   "description": "Local browser SQL and Python workspace",
   "scripts": {
     "build": "esbuild desk/src/main.js --bundle --format=esm --minify --legal-comments=linked --outfile=desk/assets/app.js",
-    "test": "node --test tests/sql.test.js"
+    "test": "node --test tests/sql.test.js tests/worker.test.js"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.4",

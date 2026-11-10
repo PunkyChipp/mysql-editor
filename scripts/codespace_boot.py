@@ -38,7 +38,8 @@ def ensure_running(root=ROOT,port=8787,timeout=20):
     with os.fdopen(fd,'a') as log:
         process=subprocess.Popen([sys.executable,str(root/'launch.py'),'--no-browser','--port',str(port)],
             cwd=root,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,
-            start_new_session=True,close_fds=True)
+            start_new_session=True,close_fds=True,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
     # Reap the child if this helper stays alive (e.g. a test process). The daemon
     # waiter never keeps the startup command alive or holds the backend open.
     threading.Thread(target=process.wait,daemon=True).start()

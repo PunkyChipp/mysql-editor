@@ -1,13 +1,13 @@
 # The SQL workspace
 
-Study Desk opens `/desk/` after boot checks pass. It uses real MySQL, not SQLite
-or an emulation. The full code-server editor remains at
-`/?folder=/home/coder/coursework` for Python debugging and terminals.
+The public editor opens at `/mysql-editor/`, using a same-origin authenticated
+API connected to the owner's Windows PC. It uses real MySQL. The local developer
+launcher still serves `/desk/`; its full code-server editor remains at
+`/?folder=/home/coder/coursework` for local debugging and terminals.
 
-The workspace runs in its own full browser tab. Codespaces hosts the backend;
-its IDE is only an administration interface. Preview frames show an Open Study
-Desk link rather than trying to run the app inside the frame. The detached
-launcher continues when the IDE tab is closed, while the Codespace remains on.
+The public workspace runs in its own full browser tab, without visiting Codespaces.
+Until its home backend is configured, the connection screen reports it as offline.
+The owner setup guide and package are at `/mysql-editor/setup/`.
 
 ## Everyday use
 

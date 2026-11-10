@@ -9,8 +9,10 @@ import {format as formatSQL} from 'sql-formatter';
 import {themes, layouts} from './themes.js';
 import {icon, hydrateIcons} from './icons.js';
 import {currentStatement, statements} from './sql.js';
+import {RemoteConnection} from './connection.js';
 
 const $=id=>document.getElementById(id);
+const config=window.STUDY_CONTEXT||{},remote=config.mode==='remote'?new RemoteConnection(config.apiBase||'./api/'):null;
 const escape = value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const id=()=>globalThis.crypto?.randomUUID?.()||'tab-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 const starter="-- Your database is connected. Make yourself at home.\n-- Run a statement: Ctrl / ⌘ Enter · Run everything: Ctrl / ⌘ Shift Enter\n\nSELECT\n    'Hello, MySQL' AS message,\n    1 + 1 AS answer,\n    CURRENT_DATE() AS today;\n";
@@ -26,6 +28,7 @@ let tableSort=null, tableDirection='ASC', tableSearch='', tableOffset=0, selecte
 hydrateIcons();
 
 async function api(action,body={}) {
+  if(remote)return remote.request(action,body);
   const response=await fetch('/__study/desk/'+action,{method:'POST',headers:{'Content-Type':'application/json','X-Study-Token':window.STUDY_CONTEXT.token},body:JSON.stringify(body)});
   let payload;try{payload=await response.json();}catch{throw Error('The workspace connection was interrupted. Try again.');}
   if(!response.ok)throw Error(payload.error||'The workspace could not finish that operation.');
@@ -113,7 +116,7 @@ async function persistState(){
 async function refresh(){
   $('refresh').disabled=true;
   try{database=await call('bootstrap');$('connection-name').textContent=database.database;$('connection-detail').textContent='MySQL '+database.version.split('-')[0];$('connection-dot').classList.add('online');$('status-connection').textContent='MySQL · '+database.database;view.dispatch({effects:language.reconfigure(languageFor(activeTab()))});renderSidebar();}
-  catch(error){$('connection-detail').textContent='Connection needs attention';$('connection-dot').classList.remove('online');$('side-content').innerHTML=`<div class="side-empty">${escape(error.message)}<br><a class="button outline" href="/__study/">Open setup</a></div>`;throw error;}
+  catch(error){$('connection-detail').textContent='Connection needs attention';$('connection-dot').classList.remove('online');$('side-content').innerHTML=`<div class="side-empty">${escape(error.message)}<br><a class="button outline" href="${remote?'./setup/':'/__study/'}">Open setup</a></div>`;throw error;}
   finally{$('refresh').disabled=false;}
 }
 function renderSidebar(){
@@ -179,7 +182,7 @@ function showAppearance(){
 function showHelp(){
   showModal('A little guidance. A lot of possibility.','SQL comes first. Python connects to the same real MySQL database.',`
   <div class="shortcut-list">${[['Run statement or selection','⌘ / Ctrl Enter'],['Run whole script','⌘ / Ctrl Shift Enter'],['Save file','⌘ / Ctrl S'],['Find in editor','⌘ / Ctrl F'],['Command menu','⌘ / Ctrl K'],['Completion','Ctrl Space']].map(([name,key])=>`<div class="shortcut-row"><span>${name}</span><kbd>${key}</kbd></div>`).join('')}</div>
-  <div class="help-grid"><div class="help-card"><h3>SQL that stays out of your way</h3><p>Click a table to browse its rows. Expand its arrow to see columns. Use the table’s code button to write a SELECT. Run uses your selection, or the statement at your cursor.</p><p>Results show up to 500 rows per statement. Table browsing pages through 100 rows at a time. CSV exports contain the displayed rows.</p></div><div class="help-card"><h3>Changes are real</h3><p>Auto-commit is on. INSERT, UPDATE, DELETE and DDL change the real database. Earlier statements can stay committed if a later one fails.</p><p>Each run starts a new connection. Keep <code>START TRANSACTION</code> and <code>COMMIT</code> in the same script. Unfinished transactions roll back when the run ends. MySQL DDL can commit implicitly.</p></div><div class="help-card"><h3>Python, with your database</h3><p>Choose the Python + MySQL example in Files. Save it, then Run Python. It uses the same database credentials through environment variables, never hard-coded passwords.</p><p>Open Code editor for breakpoints, terminals and larger projects. Python is installed; other runtimes and database drivers need administrator setup.</p></div><div class="help-card"><h3>Drafts, files, and your device</h3><p>Tabs, history and appearance are saved to this workspace. Save writes a real coursework file shared with the full editor. File imports accept SQL and Python text; importing does not execute it.</p><p>Runs stop after 35 seconds. Stop cancels the active run; it cannot undo earlier auto-committed changes. Export your work before deleting the Codespace.</p></div></div><div class="modal-actions"><button class="button outline" id="help-demo">Open practice script</button><button class="button primary" data-dismiss>Got it</button></div>`,()=>{$('help-demo').onclick=()=>{closeModal();newTab(demo,'sql','practice-data.sql');};});
+  <div class="help-grid"><div class="help-card"><h3>SQL that stays out of your way</h3><p>Click a table to browse its rows. Expand its arrow to see columns. Use the table’s code button to write a SELECT. Run uses your selection, or the statement at your cursor.</p><p>Results show up to 500 rows per statement. Table browsing pages through 100 rows at a time. CSV exports contain the displayed rows.</p></div><div class="help-card"><h3>Changes are real</h3><p>Auto-commit is on. INSERT, UPDATE, DELETE and DDL change the real database. Earlier statements can stay committed if a later one fails.</p><p>Each run starts a new connection. Keep <code>START TRANSACTION</code> and <code>COMMIT</code> in the same script. Unfinished transactions roll back when the run ends. MySQL DDL can commit implicitly.</p></div><div class="help-card"><h3>Python, with your database</h3><p>Choose the Python + MySQL example in Files. Save it, then Run Python. It uses the same database credentials through environment variables, never hard-coded passwords.</p><p>${remote?'The browser runner is noninteractive. Breakpoints and terminals are available in the local code editor on your home PC.':'Open Code editor for breakpoints, terminals and larger projects.'} Python is installed; other runtimes and database drivers need administrator setup.</p></div><div class="help-card"><h3>Drafts, files, and your device</h3><p>Tabs, history and appearance are saved to this workspace. Save writes a real coursework file shared with the full editor. File imports accept SQL and Python text; importing does not execute it.</p><p>Runs stop after 35 seconds. Stop cancels the active run; it cannot undo earlier auto-committed changes. Export your work before deleting the Codespace.</p></div></div><div class="modal-actions"><button class="button outline" id="help-demo">Open practice script</button><button class="button primary" data-dismiss>Got it</button></div>`,()=>{$('help-demo').onclick=()=>{closeModal();newTab(demo,'sql','practice-data.sql');};});
 }
 function createTable(){
   const types=['INT','BIGINT','VARCHAR(100)','VARCHAR(255)','TEXT','DECIMAL(10,2)','DATE','DATETIME','BOOLEAN'];
@@ -200,7 +203,7 @@ function createTable(){
 function showCommands(){
   const commands=[['New SQL query','plus',()=>newTab()],['Python + MySQL example','python',()=>newTab(pythonExample,'python','database.py')],['Run statement or selection','play',()=>run('smart')],['Run whole script','play',()=>run('all')],['Format SQL','format',formatDocument],['Save current file','save',saveDocument],['Open local SQL / Python file','upload',importFile],['Appearance · 20 looks','palette',showAppearance],['Refresh database and files','refresh',refresh],['Practice dataset script','database',()=>newTab(demo,'sql','practice-data.sql')],['Help and keyboard shortcuts','help',showHelp],['Full code editor','code',()=>location.assign('/?folder=/home/coder/coursework')]];
   showModal('Jump to anything.','A shortcut to the things you do most.',`<input class="field-input" id="command-filter" placeholder="Search commands or tables…" aria-label="Search commands"><div class="command-list" id="command-list"></div>`,()=>{
-    const render=()=>{const term=$('command-filter').value.toLowerCase();const items=commands.concat(database.tables.map(t=>['Browse '+t.name,'table',()=>browseTable(t.name)]));$('command-list').replaceChildren(...items.filter(c=>c[0].toLowerCase().includes(term)).map(([title,glyph,action])=>{const b=document.createElement('button');b.className='command-item';b.innerHTML=icon(glyph)+`<span>${escape(title)}</span>`;b.onclick=()=>{closeModal();Promise.resolve(action()).catch(e=>toast(e.message));};return b;}));};
+    const render=()=>{const term=$('command-filter').value.toLowerCase();const items=(remote?commands.filter(c=>c[0]!=='Full code editor'):commands).concat(database.tables.map(t=>['Browse '+t.name,'table',()=>browseTable(t.name)]));$('command-list').replaceChildren(...items.filter(c=>c[0].toLowerCase().includes(term)).map(([title,glyph,action])=>{const b=document.createElement('button');b.className='command-item';b.innerHTML=icon(glyph)+`<span>${escape(title)}</span>`;b.onclick=()=>{closeModal();Promise.resolve(action()).catch(e=>toast(e.message));};return b;}));};
     $('command-filter').oninput=render;$('command-filter').onkeydown=e=>{if(e.key==='ArrowDown'){e.preventDefault();$('command-list').querySelector('button')?.focus();}if(e.key==='Enter'){$('command-list').querySelector('button')?.click();}};render();$('command-filter').focus();
   });
 }
@@ -384,7 +387,7 @@ $('document-tabs').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key==='
 $('result-content').addEventListener('click',e=>{const cell=e.target.closest('td[data-row]');if(!cell)return;selectedCell?.classList.remove('selected-cell');selectedCell=cell;cell.classList.add('selected-cell');});
 $('result-content').addEventListener('dblclick',e=>{const cell=e.target.closest('td[data-row]');if(!cell)return;if(currentTable&&cell.classList.contains('editable-cell'))editCell(Number(cell.dataset.row),Number(cell.dataset.column));else if(currentTable?.mode!=='structure')inspectCell(Number(cell.dataset.row),Number(cell.dataset.column));});
 $('result-content').addEventListener('keydown',async e=>{const cell=e.target.closest('td[data-row]');if(!cell)return;if(e.key==='Enter'&&currentTable){e.preventDefault();editCell(Number(cell.dataset.row),Number(cell.dataset.column));}if((e.ctrlKey||e.metaKey)&&e.key==='c'){try{await navigator.clipboard.writeText(cell.textContent);toast('Cell copied.');}catch{toast('Use the Copy results button to copy the full grid.');}}});
-document.addEventListener('keydown',e=>{if(e.defaultPrevented)return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();showCommands();}if(e.key==='Escape')$('run-menu').hidden=true;});
+document.addEventListener('keydown',e=>{if(e.defaultPrevented||(remote&&remote.panel.open))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();showCommands();}if(e.key==='Escape')$('run-menu').hidden=true;});
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal();});
 const splitter=$('splitter');let dragging=false;
 splitter.addEventListener('pointerdown',e=>{dragging=true;splitter.setPointerCapture(e.pointerId);splitter.classList.add('dragging');});
@@ -398,6 +401,12 @@ async function boot(){
   makeEditor();let saved=null;try{const stored=localStorage.getItem('study-theme');theme=themes.find(t=>t.id===stored)||themes[0];}catch{}
   applyTheme(theme,theme.layout,false);
   try{
+    if(remote){
+      document.querySelector('.code-link').hidden=true;
+      const button=document.createElement('button');button.className='button ghost';button.textContent='Sign out';button.onclick=()=>remote.signOut().catch(e=>toast(e.message));document.querySelector('.top-actions').append(button);
+      $('connection-detail').textContent='Waiting for home PC';setTask('Connecting to home PC…');
+      await remote.connect();
+    }
     const statePromise=call('state').catch(()=>({value:null}));await refresh();saved=(await statePromise).value;
     if(saved?.version===1&&Array.isArray(saved.tabs)&&saved.tabs.length){
       tabs=saved.tabs.filter(t=>typeof t.id==='string'&&typeof t.text==='string'&&['sql','python'].includes(t.language)).slice(0,12);
@@ -411,4 +420,4 @@ async function boot(){
     renderSidebar();$('draft-status').textContent='Drafts saved to workspace';setTask('Ready');
   }catch(error){booting=false;newTab();setTask('Connection needs attention',true);toast(error.message);}
 }
-if(window.self===window.top)boot();else location.replace('/__study/browser');
+if(!config.redirecting){if(window.self===window.top)boot();else location.replace(remote?new URL('./standalone.html',location.href):'/__study/browser');}

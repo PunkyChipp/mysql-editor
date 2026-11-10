@@ -26,9 +26,12 @@ jobs:
           git diff --exit-code -- desk/assets/app.js
       - name: Check Python and shell sources
         run: |
-          python3 -m compileall -q launch.py desk_api.py desk scripts tests
+          python3 -m compileall -q launch.py desk_api.py remote_api.py home_setup.py home_runner.py home_paths.py desk scripts hosting tests
           sh -n editor/entrypoint.sh
           python3 tests/test_codespace_boot.py -v
+          python3 tests/test_remote_api.py -v
+          python3 tests/test_home_deployment.py -v
+          python3 tests/test_home_wizard.py -v
   deploy:
     needs: check
     runs-on: ubuntu-latest
